@@ -87,7 +87,7 @@ echo "Extracting rootfs tarball using pseudo..."
 echo "$PSEUDO $PSEUDO_OPTS tar -C \"$SDK_ROOTFS_DIR\" $TAR_OPTS \"$ROOTFS_TARBALL\""
 $PSEUDO $PSEUDO_OPTS tar -C "$SDK_ROOTFS_DIR" $TAR_OPTS "$ROOTFS_TARBALL"
 
-DIRCHECK=`ls -l "$SDK_ROOTFS_DIR" | wc -l`
+DIRCHECK=`ls -lH "$SDK_ROOTFS_DIR" | wc -l`
 if [ "$DIRCHECK" -lt 5 ]; then
 	echo "Warning: I don't see many files in $SDK_ROOTFS_DIR"
 	echo "Please double-check the extraction worked as intended"
