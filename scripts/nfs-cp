@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+# This utility copies a file into an exported rootfs using pseudo
+#
+# Copyright (c) 2023 Pengutronix
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
+
+function usage() {
+	echo "Usage: $0 <extract-dir> <source> <dest>"
+}
+
+if [ $# -ne 3 ]; then
+	usage
+	exit 1
+fi
+
+SYSROOT_SETUP_SCRIPT=`which oe-find-native-sysroot 2> /dev/null`
+if [ -z "$SYSROOT_SETUP_SCRIPT" ]; then
+	echo "Error: Unable to find the oe-find-native-sysroot script"
+	echo "Did you forget to source your build system environment setup script?"
+	exit 1
+fi
+. $SYSROOT_SETUP_SCRIPT qemu-helper-native
+PSEUDO_OPTS="-P $OECORE_NATIVE_SYSROOT/usr"
+
+SDK_ROOTFS_DIR=$1
+SOURCE_PATH=$2
+DEST_PATH=$3
+
+# Convert SDK_ROOTFS_DIR to a full pathname
+if [[ ${SDK_ROOTFS_DIR:0:1} != "/" ]]; then
+	SDK_ROOTFS_DIR=$(readlink -f $(pwd)/$SDK_ROOTFS_DIR)
+fi
+
+pseudo_state_dir="$SDK_ROOTFS_DIR/../$(basename "$SDK_ROOTFS_DIR").pseudo_state"
+pseudo_state_dir="$(readlink -f $pseudo_state_dir)"
+
+echo "PSEUDO_LOCALSTATEDIR: $pseudo_state_dir"
+
+PSEUDO_LOCALSTATEDIR="$pseudo_state_dir"
+export PSEUDO_LOCALSTATEDIR
+
+echo "Copying file using pseudo..."
+echo "$PSEUDO $PSEUDO_OPTS cp $SOURCE_PATH $SDK_ROOTFS_DIR/$DEST_PATH"
+$PSEUDO $PSEUDO_OPTS cp $SOURCE_PATH $SDK_ROOTFS_DIR/$DEST_PATH
+
+exit 0
