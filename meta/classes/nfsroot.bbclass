@@ -15,7 +15,7 @@ python nfsroot_eventhandler() {
     try:
         # Connect to the server
         client.connect(socket_path)
-    except ConnectionRefusedError or FileNotFoundError:
+    except (ConnectionRefusedError, FileNotFoundError):
         bb.warn('Cannot connect to nfs-root-updater server, skipping update of nfsroot')
         client.close()
         return
