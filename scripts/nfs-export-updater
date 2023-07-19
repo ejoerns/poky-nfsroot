@@ -31,7 +31,7 @@ NFS export update server for bitbake
 
 Required steps before starting the server are:
 
-- "Add INHERIT += nfsroot.bbclass" to a config file and build a root file system image.
+- Add `INHERIT += "nfsroot"` to local.conf or another config file and build a root file system image.
 - Export the root file system via "runqemu-extract-sdk <rootfs-archive> <exportdir>"
 - Start a userspace nfs server with "runqemu-export-rootfs start <exportdir>"
   (for QEMU you can also use "runqemu qemux86-64 nographic slirp <exportdir>").
