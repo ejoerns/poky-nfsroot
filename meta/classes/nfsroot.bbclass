@@ -16,11 +16,11 @@ python nfsroot_eventhandler() {
         # Connect to the server
         client.connect(socket_path)
     except (ConnectionRefusedError, FileNotFoundError):
-        bb.warn('Cannot connect to nfs-root-updater server, skipping update of nfsroot')
+        bb.warn('Cannot connect to nfs-export-updater server, skipping update of nfsroot')
         client.close()
         return
 
-    bb.note(f'Notifying nfs-root-updater server..')
+    bb.note(f'Notifying nfs-export-updater server..')
     # Send a message to the server
     message = 'bitbake_done'
     client.sendall(message.encode())
