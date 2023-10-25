@@ -17,6 +17,13 @@ def upgrade(pkgmgr):
 
     cmd = "%s %s upgrade" % (pkgmgr.opkg_cmd, pkgmgr.opkg_args)
 
+    os.environ['D'] = pkgmgr.target_rootfs
+    os.environ['OFFLINE_ROOT'] = pkgmgr.target_rootfs
+    os.environ['IPKG_OFFLINE_ROOT'] = pkgmgr.target_rootfs
+    os.environ['OPKG_OFFLINE_ROOT'] = pkgmgr.target_rootfs
+    os.environ['INTERCEPT_DIR'] = pkgmgr.intercepts_dir
+    os.environ['NATIVE_ROOT'] = pkgmgr.d.getVar('STAGING_DIR_NATIVE')
+
     try:
         output = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT).decode('utf-8')
         log.debug("Upgrade output:")
