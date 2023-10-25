@@ -3,11 +3,11 @@ python nfsroot_eventhandler() {
     if d.getVar('NFS_UPDATER_INTERNAL'):
         return
 
-    # Set the path for the Unix socket
-    socket_path = '/tmp/nfsup.sock'
-
     import socket
     import os
+
+    # Set the path for the Unix socket
+    socket_path = f"/tmp/nfsup-{os.environ['USER']}.sock"
 
     # Create the Unix socket client
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
