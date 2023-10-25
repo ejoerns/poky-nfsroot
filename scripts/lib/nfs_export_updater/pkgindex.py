@@ -83,6 +83,21 @@ def add_tool_to_path(tinfoil, native_recipe, toolname, bindir="/usr/bin", pseudo
     else:
         os.environ["PATH"] = staging_bindir_native + ":" + os.environ["PATH"]
 
+def add_crosstool_to_path(tinfoil, cross_recipe, toolname, bindir="/usr/bin/crossscripts"):
+    # add opkg to PATH
+    rd = tinfoil.parse_recipe(cross_recipe)
+    staging_bindir_cross = '%s/%s/%s%s' % (rd.getVar("COMPONENTS_DIR"), rd.getVar("MACHINE_ARCH"), cross_recipe, bindir)
+
+    log.debug("Testing cross tool: %s" % os.path.join(staging_bindir_cross, toolname))
+    if not os.path.exists(os.path.join(staging_bindir_cross, toolname)):
+        log.info(f"Adding '{toolname}' to '{cross_recipe}' recipe sysroot")
+        tinfoil.build_targets(cross_recipe)
+        if not os.path.exists(os.path.join(staging_bindir_cross, toolname)):
+            raise Exception(f"Failed adding '{toolname}' to '{cross_recipe}' recipe sysroot")
+    else:
+        log.info(f"'{toolname}' already existing in '{cross_recipe}' recipe sysroot")
+
+    os.environ["PATH"] = staging_bindir_cross + ":" + os.environ["PATH"]
 
 def prepare_native_tools():
     import bb.tinfoil
@@ -101,6 +116,8 @@ def prepare_native_tools():
         add_tool_to_path(tinfoil, "virtual/update-alternatives-native", "update-alternatives")
         add_tool_to_path(tinfoil, "shadow-native", "pwconv", bindir="/usr/sbin")
         add_tool_to_path(tinfoil, "pseudo-native", "pseudo")
+        add_tool_to_path(tinfoil, "kmod-native", "depmod", bindir="/sbin")
+        add_crosstool_to_path(tinfoil, "depmodwrapper-cross", "depmodwrapper")
 
         # add package manager-specific tools
         if pkg_type == 'ipk':
