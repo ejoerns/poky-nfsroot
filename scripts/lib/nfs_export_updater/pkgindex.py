@@ -66,7 +66,8 @@ def add_tool_to_path(tinfoil, native_recipe, toolname, bindir="/usr/bin", pseudo
         rd = tinfoil.parse_recipe("pseudo-native")
         pseudo_native_prefix = '%s/usr' % rd.getVar("STAGING_DIR_NATIVE")
         pseudo_native_bin = '%s/bin/pseudo' % pseudo_native_prefix
-        wrapper_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../bin")
+        wrapper_path = os.path.join(rd.getVar("TMPDIR"), "pseudo-wrapper/bin")
+        os.makedirs(wrapper_path, exist_ok=True)
         tool_path = os.path.join(wrapper_path, toolname)
         with open(tool_path, "w") as f:
             f.write(f"#!/bin/sh\n{pseudo_native_bin} -P {pseudo_native_prefix} {staging_bindir_native}/{toolname} \"$@\"\n")
