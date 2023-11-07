@@ -10,6 +10,8 @@ import os
 import sys
 import argparse
 import logging
+import subprocess
+import re
 script_path = os.path.dirname(os.path.realpath(__file__))
 lib_path = script_path + '/lib'
 sys.path = sys.path + [lib_path]
@@ -25,6 +27,50 @@ from nfs_export_updater.server import NFSRootUpdateServer
 logger = logging.getLogger('nfs-export-updater')
 
 
+def check_free_port(host, port):
+    """ Check whether the port is free or not """
+    import socket
+    from contextlib import closing
+
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+        if sock.connect_ex((host, port)) == 0:
+            # Port is open, so not free
+            return False
+        else:
+            # Port is not open, so free
+            return True
+
+
+def setup_nfs_exporter(rootfs):
+    nfs_instance = 0
+
+    nfsd_port = 3048 + nfs_instance
+    while not check_free_port('localhost', nfsd_port):
+        nfs_instance += 1
+        nfsd_port += 1
+
+    mountd_port = nfsd_port
+
+    # Export vars for runqemu-export-rootfs
+    export_dict = {
+        'NFS_INSTANCE': nfs_instance,
+        'NFSD_PORT': nfsd_port,
+        'MOUNTD_PORT': mountd_port,
+    }
+    for k, v in export_dict.items():
+        # Use '%s' since they are integers
+        os.putenv(k, '%s' % v)
+
+    cmd = ('bitbake', 'qemu-helper-native', '-caddto_recipe_sysroot')
+    logger.info('Running %s...' % str(cmd))
+    subprocess.check_call(cmd)
+
+    # Start the userspace NFS server
+    cmd = ('runqemu-export-rootfs', 'start', rootfs)
+    logger.info('Running %s...' % str(cmd))
+    subprocess.check_call(cmd)
+
+
 def main():
     parser = argparse.ArgumentParser(description='''
 NFS export update server for bitbake
@@ -33,8 +79,6 @@ Required steps before starting the server are:
 
 - Add `INHERIT += "nfsroot"` to local.conf or another config file and build a root file system image.
 - Export the root file system via "runqemu-extract-sdk <rootfs-archive> <exportdir>"
-- Start a userspace nfs server with "runqemu-export-rootfs start <exportdir>"
-  (for QEMU you can also use "runqemu qemux86-64 nographic slirp <exportdir>").
 
 You can now modify and update individual packages by running 'bitbake <package>'.
 ''', formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -57,6 +101,9 @@ You can now modify and update individual packages by running 'bitbake <package>'
         logger.error("Did you run runqemu-extract-sdk to create it?")
         sys.exit(1)
 
+    setup_nfs_exporter(args.exportdir)
+    print("\n") # for visibility of nfs option printout
+
     # needs to be consistent with runqemu-export-rootfs
     pseudo_localstatedir = os.path.join(
             args.exportdir,
@@ -64,8 +111,7 @@ You can now modify and update individual packages by running 'bitbake <package>'
             os.path.basename(args.exportdir) + '.pseudo_state')
 
     if not os.path.exists(pseudo_localstatedir):
-        logger.error(f"{pseudo_localstatedir} does not exist.")
-        logger.error("Did you run runqemu-export-rootfs to export it?")
+        logger.error(f"{pseudo_localstatedir} does not exist. Maybe runqemu-export-rootfs failed to run?")
         sys.exit(1)
 
     os.environ['PSEUDO_LOCALSTATEDIR'] = pseudo_localstatedir
