@@ -83,7 +83,7 @@ Required steps before starting the server are:
 You can now modify and update individual packages by running 'bitbake <package>'.
 ''', formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('rootfs', help='rootfs recipe', action='store')
-    parser.add_argument('exportdir', help='nfs root export directory', action='store')
+    parser.add_argument('exportdir', help='nfs root export directory', action='store', nargs='?', default=None)
     parser.add_argument('-d', '--debug', help='Enable debug output', action='store_true')
 
     args = parser.parse_args()
@@ -92,6 +92,19 @@ You can now modify and update individual packages by running 'bitbake <package>'
         logging.getLogger().setLevel(logging.DEBUG)
     else:
         logging.getLogger().setLevel(logging.INFO)
+
+    import bb.tinfoil
+    with bb.tinfoil.Tinfoil() as tinfoil:
+        tinfoil.prepare(quiet=1)
+
+        b_topdir = tinfoil.config_data.getVar('TOPDIR')
+        b_machine = tinfoil.config_data.getVar('MACHINE')
+
+    # figure out default nfsroot directory to use
+    # will be of form ${TOPDIR}/nfsroot-{rootfs}-${MACHINE}'
+    if not args.exportdir:
+        args.exportdir = '%s/nfsroot-%s-%s' % (b_topdir, args.rootfs, b_machine)
+        logging.info(f"Using {args.exportdir} as nfsroot export dir")
 
     if not os.path.isabs(args.exportdir):
         args.exportdir = os.path.abspath(args.exportdir)
