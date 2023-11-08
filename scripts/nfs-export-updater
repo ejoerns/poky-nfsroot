@@ -27,6 +27,36 @@ from nfs_export_updater.server import NFSRootUpdateServer
 logger = logging.getLogger('nfs-export-updater')
 
 
+def create_nfs_exportdir(rootfs, extract_dir):
+    unpack_archive = None
+
+    import bb.tinfoil
+    with bb.tinfoil.Tinfoil() as tinfoil:
+        tinfoil.prepare(quiet=1)
+
+        rd = tinfoil.parse_recipe(rootfs)
+        src_prefix = os.path.join(rd.getVar('DEPLOY_DIR_IMAGE'), rd.getVar('IMAGE_LINK_NAME'))
+        for suffix in ['.tar.bz2', '.tar.gz']:
+            check_path  = f"{src_prefix}{suffix}"
+            logging.debug(f"checking archive path {check_path}")
+            if os.path.exists(check_path):
+                unpack_archive = check_path
+                logging.debug(f"Found existing archive at {check_path}")
+                break
+
+    if not unpack_archive:
+        logger.error(f"Unable to unpack: Could not find rootfs archive. Did you run 'bitbake {rootfs}'?")
+        sys.exit(1)
+
+    cmd = ('bitbake', 'qemu-helper-native', '-caddto_recipe_sysroot')
+    logger.info('Running %s...' % str(cmd))
+    subprocess.check_call(cmd)
+
+    cmd = ('runqemu-extract-sdk', unpack_archive, extract_dir)
+    logger.info('Running %s...' % str(cmd))
+    subprocess.check_call(cmd)
+
+
 def check_free_port(host, port):
     """ Check whether the port is free or not """
     import socket
@@ -78,7 +108,6 @@ NFS export update server for bitbake
 Required steps before starting the server are:
 
 - Add `INHERIT += "nfsroot"` to local.conf or another config file and build a root file system image.
-- Export the root file system via "runqemu-extract-sdk <rootfs-archive> <exportdir>"
 
 You can now modify and update individual packages by running 'bitbake <package>'.
 ''', formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -110,9 +139,9 @@ You can now modify and update individual packages by running 'bitbake <package>'
         args.exportdir = os.path.abspath(args.exportdir)
 
     if not os.path.exists(args.exportdir):
-        logger.error(f"{args.exportdir} does not exist.")
-        logger.error("Did you run runqemu-extract-sdk to create it?")
-        sys.exit(1)
+        logger.info(f"{args.exportdir} does not exist. Creating it..")
+
+        create_nfs_exportdir(args.rootfs, args.exportdir)
 
     setup_nfs_exporter(args.exportdir)
     print("\n") # for visibility of nfs option printout
