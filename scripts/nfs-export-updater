@@ -101,6 +101,13 @@ def setup_nfs_exporter(rootfs):
     subprocess.check_call(cmd)
 
 
+def stop_nfs_exporter(rootfs):
+    logger.info("Shutting down the userspace NFS server...")
+    cmd = ("runqemu-export-rootfs", "stop", rootfs)
+    logger.debug('Running %s' % str(cmd))
+    subprocess.check_call(cmd)
+
+
 def main():
     parser = argparse.ArgumentParser(description='''
 NFS export update server for bitbake
@@ -164,8 +171,13 @@ You can now modify and update individual packages by running 'bitbake <package>'
     logger.info(f"NFS export dir ist at {args.exportdir}")
     logger.info("Starting server..")
 
-    # Start the server
-    asyncio.run(server.start_server(b_machine))
+    try:
+        # Start the server
+        asyncio.run(server.start_server(b_machine))
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        pass
+    finally:
+        stop_nfs_exporter(args.exportdir)
 
 
 if __name__ == "__main__":
