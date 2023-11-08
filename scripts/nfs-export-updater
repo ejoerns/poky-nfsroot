@@ -165,7 +165,7 @@ You can now modify and update individual packages by running 'bitbake <package>'
     logger.info("Starting server..")
 
     # Start the server
-    asyncio.run(server.start_server())
+    asyncio.run(server.start_server(b_machine))
 
 
 if __name__ == "__main__":

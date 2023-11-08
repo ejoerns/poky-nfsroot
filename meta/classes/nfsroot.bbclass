@@ -7,7 +7,7 @@ python nfsroot_eventhandler() {
     import os
 
     # Set the path for the Unix socket
-    socket_path = f"/tmp/nfsup-{os.environ['USER']}.sock"
+    socket_path = f"/tmp/nfsup-{os.environ['USER']}-{d.getVar('MACHINE')}.sock"
 
     # Create the Unix socket client
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
