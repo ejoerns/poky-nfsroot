@@ -5,13 +5,6 @@ import logging
 from .pkgindex import update_nfsroot
 from .pkgindex import prepare_native_tools
 
-# Set the path for the Unix domain socket
-socket_path = f"/tmp/nfsup-{os.environ['USER']}.sock"
-
-# Remove the socket file if it already exists
-if os.path.exists(socket_path):
-    os.remove(socket_path)
-
 log = logging.getLogger('nfs-export-updater')
 
 
@@ -58,9 +51,17 @@ class NFSRootUpdateServer():
         print("Client disconnected")
         writer.close()
 
-    async def start_server(self):
+    async def start_server(self, sock_instance):
         log.info("Prepare native tools")
         prepare_native_tools()
+
+        # Set the path for the Unix domain socket
+        socket_path = f"/tmp/nfsup-{os.environ['USER']}-{sock_instance}.sock"
+
+        # Remove the socket file if it already exists
+        if os.path.exists(socket_path):
+            log.info(f"Removing existing socket path {socket_path}")
+            os.remove(socket_path)
 
         server = await asyncio.start_unix_server(self.handle_client, path=socket_path)
         log.info(f"Server is running on {socket_path}")

@@ -15,25 +15,17 @@ Build your rootfs recipe:
 bitbake my-rootfs-image
 ```
 
-Export your rootfs:
-
-```
-NFSROOT=$BUILDDIR/my-nfsroot
-bitbake qemu-helper-native -caddto_recipe_sysroot
-runqemu-extract-sdk $BUILDDIR/tmp/deploy/images/<machine>/<my-rootfs-image-machine>.tar.gz $NFSROOT
-```
-
 Start the update server:
 
 ```
-nfs-export-updater --debug my-rootfs-image $NFSROOT
+nfs-export-updater --debug my-rootfs-image <exportdir>
 ```
 
-This directory can now be exported via a userspace NFS server sharing the pseudo
-database, so user permissions appear correctly on the device-under-test:
+This will
 
-- To start a userspace nfs server: `runqemu-export-rootfs start $NFSROOT`
-- For QEMU you can also use `runqemu qemux86-64 nographic slirp $NFSROOT`
+- extract the rootfs tar archive to the folder `<exportdir>` if this does not exist yet.
+  If the argument is omitted, the default folder name `nfsroot-<image>-${MACHINE}` will be used instead.
+- start a unfsd instance on this folder
 
 To update the nfsroot, it's sufficient to just build the recipe in question.
 To copy files into the nfsroot, use `nfs-cp`, e.g.
